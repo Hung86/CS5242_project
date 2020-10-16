@@ -1,0 +1,13 @@
+# Folders
+venv
+*/venv
+
+.idea
+*/.idea
+
+.ipynb_checkpoints
+*/.ipynb_checkpoints
+
+# Files
+.DS_Store
+*/.DS_Store
