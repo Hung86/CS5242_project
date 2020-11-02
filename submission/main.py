@@ -198,9 +198,9 @@ def train_model(img_size, train_dir, train_label, output_dir, model, logger):
         hist = model.fit(train_data, epochs=70, validation_data=val_data, verbose=1, callbacks=[tensorboard])
         history.append(hist)
         model.evaluate(val_data, verbose=2)
-	
-	model.save(output_dir + "/inceptionV3_model.h5")
-	return history
+
+    model.save(output_dir + "/inceptionV3_model.h5")
+    return history
 
 def test_model(img_size, test_dir, output_dir, output_filename):
     testgen = ImageDataGenerator(rescale=1. / 255)
