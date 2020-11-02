@@ -202,11 +202,10 @@ def train_model(img_size, train_dir, train_label, output_dir, model, logger):
     model.save(output_dir + "/inceptionV3_model.h5")
     return history
 
-def test_model(img_size, test_dir, output_dir, output_filename):
+def test_model(img_size, test_dir, output_filename, model):
     testgen = ImageDataGenerator(rescale=1. / 255)
     data_test = testgen.flow_from_directory(directory=test_dir,
                                             shuffle=False, target_size=img_size, class_mode='categorical', batch_size=1)
-    model = tf.keras.models.load_model(output_dir + "/inceptionV3_model.h5")
     predicted_classes = np.argmax(model.predict(data_test), axis=-1)
 
     test_id = data_test.filenames
@@ -221,7 +220,7 @@ def run(args, logger):
 
     # get respective directories
     train_dir = get_dir(data_dir, 'train_image')
-    test_dir = get_dir(data_dir, 'test_image')
+    test_dir = os.path.join(data_dir, 'test_image')
     output_dir = 'model_output'
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -246,7 +245,7 @@ def run(args, logger):
     output_filename = os.path.join(output_dir, 'submission.csv')
 
     logger.info("Testing model")
-    test_model(img_size, test_dir, output_dir, output_filename)
+    test_model(img_size, test_dir, output_filename, model)
 
     logger.info("The output file is stored at {}.".format(output_filename))
 
