@@ -169,7 +169,7 @@ def build_model():
     return model
 
 
-def train_model(img_size, train_dir, train_label, output_dir, model):
+def train_model(img_size, train_dir, train_label, output_dir, model, logger):
     batch_size = 32
 
     kf = KFold(n_splits=6, shuffle=True, random_state=42)
@@ -184,7 +184,7 @@ def train_model(img_size, train_dir, train_label, output_dir, model):
     for train_index, val_index in kf.split(train_label):
         train_set = train_label.loc[train_index]
         val_set = train_label.loc[val_index]
-        train_set_up = upsampling(train_set)
+        train_set_up = upsampling(train_set, logger)
 
         train_data = train_gen.flow_from_dataframe(dataframe=train_set_up, directory=train_dir,
                                                    x_col="ID", y_col="Label", shuffle=True, class_mode="categorical",
@@ -239,7 +239,7 @@ def run(args, logger):
     model = build_model()
 
     logger.info("Training model")
-    train_model(img_size, train_dir, train_label, output_dir, model)
+    train_model(img_size, train_dir, train_label, output_dir, model, logger)
 
     output_filename = os.path.join(output_dir, 'submission.csv')
 
