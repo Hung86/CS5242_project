@@ -10,11 +10,12 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.model_selection import KFold
 from tensorflow.keras.applications import InceptionV3
-from tensorflow.keras.callbacks import TensorBoard
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
 from tensorflow.keras.initializers import Zeros, glorot_normal
 from tensorflow.keras.layers import BatchNormalization, Dense, Dropout, Flatten
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.preprocessing.image import ImageDataGenerator  # new!
+
 
 '''
 GROUP 11
