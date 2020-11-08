@@ -131,7 +131,7 @@ def upsampling(data_frame, logger):
     return df_upsampled
 
 
-def build_model():
+def inceptionV3_build_model():
     w_init = glorot_normal()
     b_init = Zeros()
     incep_net3 = InceptionV3(input_shape=(512, 512, 3), include_top=False, weights="imagenet", pooling="avg")
@@ -170,7 +170,7 @@ def build_model():
     return model
 
 
-def train_model(img_size, train_dir, train_label, output_dir, model, logger):
+def inceptionV3_train_model(img_size, train_dir, train_label, output_dir, model, logger):
     batch_size = 32
 
     kf = KFold(n_splits=6, shuffle=True, random_state=42)
@@ -207,15 +207,175 @@ def train_model(img_size, train_dir, train_label, output_dir, model, logger):
 
     return history
 
+def resnet50V2_build_model():
+    w_init = glorot_normal()
+    b_init = Zeros()
+    res_net50v2 = ResNet50V2(input_shape=(512, 512, 3), include_top=False, weights="imagenet", pooling="avg")
+
+    for layer in incep_net3.layers:
+        layer.trainable = False
+
+    model = Sequential()
+    model.add(res_net50v2)
+    model.add(Flatten())
+    model.add(Dropout(0.2))
+    model.add(
+        Dense(276, activation='relu', kernel_initializer=w_init, bias_initializer=b_init, kernel_regularizer='l2'))
+    model.add(BatchNormalization())
+    model.add(
+        Dense(3, activation='softmax', kernel_initializer=w_init, bias_initializer=b_init, kernel_regularizer='l2'))
+    model.summary()
+
+    optimizer = tf.keras.optimizers.Adam(
+        learning_rate=0.00001,
+        beta_1=0.9,
+        beta_2=0.999,
+        epsilon=1e-08,
+        amsgrad=False,
+        name="Adam",
+    )
+
+    loss = tf.keras.losses.CategoricalCrossentropy(
+        from_logits=False,
+        label_smoothing=0.05,
+        reduction="auto",
+        name="categorical_crossentropy",
+    )
+    model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
+
+    return model
+
+
+def resnet50V2_train_model(img_size, train_dir, train_label, output_dir, model, logger):
+    batch_size = 32
+
+    kf = KFold(n_splits=6, shuffle=True, random_state=42)
+    train_gen = ImageDataGenerator(rescale=1. / 255)
+    val_gen = ImageDataGenerator(rescale=1. / 255)
+
+    output_logs = os.path.join(output_dir, 'logs')
+    tensorboard = TensorBoard(output_logs)
+
+    model_checkpoint = ModelCheckpoint(
+                                       filepath=output_dir + "/resnet50V2_model.h5",
+                                       monitor='val_loss',
+                                       mode='min',
+                                       save_best_only=True)
+    history = []
+
+    for train_index, val_index in kf.split(train_label):
+        train_set = train_label.loc[train_index]
+        val_set = train_label.loc[val_index]
+        train_set_up = upsampling(train_set, logger)
+
+        train_data = train_gen.flow_from_dataframe(dataframe=train_set_up, directory=train_dir,
+                                                   x_col="ID", y_col="Label", shuffle=True, class_mode="categorical",
+                                                   seed=123,
+                                                   target_size=img_size, batch_size=batch_size)
+        val_data = val_gen.flow_from_dataframe(dataframe=val_set, directory=train_dir,
+                                               x_col="ID", y_col="Label", shuffle=True, class_mode="categorical",
+                                               seed=123,
+                                               target_size=img_size, batch_size=batch_size)
+
+        hist = model.fit(train_data, epochs=50, validation_data=val_data, verbose=1, callbacks=[tensorboard, model_checkpoint])
+        history.append(hist)
+        model.evaluate(val_data, verbose=2)
+
+    return history
+
+
+def xception_build_model():
+    w_init = glorot_normal()
+    b_init = Zeros()
+    xception = Xception(input_shape=(512, 512, 3), include_top=False, weights="imagenet", pooling="avg")
+
+    for layer in incep_net3.layers:
+        layer.trainable = False
+
+    model = Sequential()
+    model.add(xception)
+    model.add(Flatten())
+    model.add(Dropout(0.2))
+    model.add(
+        Dense(512, activation='relu', kernel_initializer=w_init, bias_initializer=b_init, kernel_regularizer='l2'))
+    model.add(BatchNormalization())
+    model.add(
+        Dense(3, activation='softmax', kernel_initializer=w_init, bias_initializer=b_init, kernel_regularizer='l2'))
+    model.summary()
+
+    optimizer = tf.keras.optimizers.Adam(
+        learning_rate=0.00001,
+        beta_1=0.9,
+        beta_2=0.999,
+        epsilon=1e-08,
+        amsgrad=False,
+        name="Adam",
+    )
+
+    loss = tf.keras.losses.CategoricalCrossentropy(
+        from_logits=False,
+        label_smoothing=0.05,
+        reduction="auto",
+        name="categorical_crossentropy",
+    )
+    model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
+
+    return model
+
+
+def xception_train_model(img_size, train_dir, train_label, output_dir, model, logger):
+    batch_size = 32
+
+    kf = KFold(n_splits=6, shuffle=True, random_state=42)
+    train_gen = ImageDataGenerator(rescale=1. / 255)
+    val_gen = ImageDataGenerator(rescale=1. / 255)
+
+    output_logs = os.path.join(output_dir, 'logs')
+    tensorboard = TensorBoard(output_logs)
+
+    model_checkpoint = ModelCheckpoint(
+                                       filepath=output_dir + "/xception_model.h5",
+                                       monitor='val_loss',
+                                       mode='min',
+                                       save_best_only=True)
+    history = []
+
+    for train_index, val_index in kf.split(train_label):
+        train_set = train_label.loc[train_index]
+        val_set = train_label.loc[val_index]
+        train_set_up = upsampling(train_set, logger)
+
+        train_data = train_gen.flow_from_dataframe(dataframe=train_set_up, directory=train_dir,
+                                                   x_col="ID", y_col="Label", shuffle=True, class_mode="categorical",
+                                                   seed=123,
+                                                   target_size=img_size, batch_size=batch_size)
+        val_data = val_gen.flow_from_dataframe(dataframe=val_set, directory=train_dir,
+                                               x_col="ID", y_col="Label", shuffle=True, class_mode="categorical",
+                                               seed=123,
+                                               target_size=img_size, batch_size=batch_size)
+
+        hist = model.fit(train_data, epochs=70, validation_data=val_data, verbose=1, callbacks=[tensorboard, model_checkpoint])
+        history.append(hist)
+        model.evaluate(val_data, verbose=2)
+
+    return history
+
+
 def test_model(img_size, test_dir, output_dir, output_filename):
     testgen = ImageDataGenerator(rescale=1. / 255)
     data_test = testgen.flow_from_directory(directory=test_dir,
                                             shuffle=False, target_size=img_size, class_mode='categorical', batch_size=1)
 
-    model = tf.keras.models.load_model(output_dir + "/inceptionV3_model.h5")
+    inceptionV3_model = tf.keras.models.load_model(output_dir + "/inceptionV3_model.h5")
+    resnet50V2_model = tf.keras.models.load_model(output_dir + "/resnet50V2_model.h5")
+    xception_model = tf.keras.models.load_model(output_dir + "/xception_model.h5")
 
-    predicted_classes = np.argmax(model.predict(data_test), axis=-1)
-
+    models = [inceptionV3_model, resnet50V2_model, xception_model]
+    yhats = [model.predict(data_test) for model in models]
+    yhats = np.array(yhats)
+    predicted_sum = np.sum(yhats, axis = 0)
+    predicted_classes  = np.argmax(predicted_sum, axis = 1)
+    # predicted_classes = np.argmax(model.predict(data_test), axis=-1)
     test_id = data_test.filenames
     new_test_id = [x.replace('.png', '').replace('test_image/', '') for x in test_id]
     evaluation = pd.DataFrame({'ID': new_test_id, 'Label': predicted_classes})
@@ -241,14 +401,17 @@ def run(args, logger):
     label = train_label.Label.map(lambda x: str(x)).to_numpy()
     train_label = train_label.assign(ID=filename, Label=label)
 
-    logger.info("Up sampling train dataset")
-    upsampling(train_label, logger)
 
     logger.info("Building model")
-    model = build_model()
+    pretrained_inceptionV3 = inceptionV3_build_model()
+    pretrained_resnet50V2 = resnet50V2_build_model()
+    pretrained_xception = xception_build_model()
 
     logger.info("Training model")
-    train_model(img_size, train_dir, train_label, output_dir, model, logger)
+    inceptionV3_train_model(img_size, train_dir, train_label, output_dir, pretrained_inceptionV3, logger)
+    resnet50V2_train_model(img_size, train_dir, train_label, output_dir, pretrained_resnet50V2, logger)
+    xception_train_model(img_size, train_dir, train_label, output_dir, pretrained_xception, logger)
+
 
     output_filename = os.path.join(output_dir, 'submission.csv')
 
