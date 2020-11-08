@@ -212,7 +212,7 @@ def resnet50V2_build_model():
     b_init = Zeros()
     res_net50v2 = ResNet50V2(input_shape=(512, 512, 3), include_top=False, weights="imagenet", pooling="avg")
 
-    for layer in incep_net3.layers:
+    for layer in res_net50v2.layers:
         layer.trainable = False
 
     model = Sequential()
@@ -289,7 +289,7 @@ def xception_build_model():
     b_init = Zeros()
     xception = Xception(input_shape=(512, 512, 3), include_top=False, weights="imagenet", pooling="avg")
 
-    for layer in incep_net3.layers:
+    for layer in xception.layers:
         layer.trainable = False
 
     model = Sequential()
