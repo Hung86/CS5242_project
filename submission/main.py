@@ -15,6 +15,7 @@ from tensorflow.keras.initializers import Zeros, glorot_normal
 from tensorflow.keras.layers import BatchNormalization, Dense, Dropout, Flatten
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.preprocessing.image import ImageDataGenerator  # new!
+np.random.seed(5242)
 
 
 '''
