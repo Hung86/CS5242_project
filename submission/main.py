@@ -354,11 +354,55 @@ def xception_train_model(img_size, train_dir, train_label, output_dir, model, lo
                                                seed=123,
                                                target_size=img_size, batch_size=batch_size)
 
-        hist = model.fit(train_data, epochs=70, validation_data=val_data, verbose=1, callbacks=[tensorboard, model_checkpoint])
+        hist = model.fit(train_data, epochs=50, validation_data=val_data, verbose=1, callbacks=[tensorboard, model_checkpoint])
         history.append(hist)
         model.evaluate(val_data, verbose=2)
 
     return history
+
+def xception_train_model_with_augmentation(img_size, train_dir, train_label, output_dir, model, logger):
+    batch_size = 32
+
+    kf = KFold(n_splits=6, shuffle=True, random_state=42)
+    train_gen = ImageDataGenerator(rescale=1. / 255,
+                                    shear_range =0.2,
+                                    rotation_range = 20,
+                                    width_shift_range = 0.1,
+                                    height_shift_range = 0.1,
+                                    zoom_range = 0.2,
+                                    horizontal_flip = True)
+
+    val_gen = ImageDataGenerator(rescale=1. / 255)
+
+    output_logs = os.path.join(output_dir, 'logs')
+    tensorboard = TensorBoard(output_logs)
+    model = tf.keras.models.load_model(output_dir + "/xception_model.h5")
+    model_checkpoint = ModelCheckpoint(
+                                       filepath=output_dir + "/xception_model.h5",
+                                       monitor='val_loss',
+                                       mode='min',
+                                       save_best_only=True)
+    history = []
+    for train_index, val_index in kf.split(train_label):
+        train_set = train_label.loc[train_index]
+        val_set = train_label.loc[val_index]
+        train_set_up = upsampling(train_set, logger)
+
+        train_data = train_gen.flow_from_dataframe(dataframe=train_set_up, directory=train_dir,
+                                                   x_col="ID", y_col="Label", shuffle=True, class_mode="categorical",
+                                                   seed=123,
+                                                   target_size=img_size, batch_size=batch_size)
+        val_data = val_gen.flow_from_dataframe(dataframe=val_set, directory=train_dir,
+                                               x_col="ID", y_col="Label", shuffle=True, class_mode="categorical",
+                                               seed=123,
+                                               target_size=img_size, batch_size=batch_size)
+
+        hist = model.fit(train_data, epochs=40, validation_data=val_data, verbose=1, callbacks=[tensorboard, model_checkpoint])
+        history.append(hist)
+        model.evaluate(val_data, verbose=2)
+
+    return history
+
 
 
 def test_model(img_size, test_dir, output_dir, output_filename):
@@ -411,6 +455,7 @@ def run(args, logger):
     inceptionV3_train_model(img_size, train_dir, train_label, output_dir, pretrained_inceptionV3, logger)
     resnet50V2_train_model(img_size, train_dir, train_label, output_dir, pretrained_resnet50V2, logger)
     xception_train_model(img_size, train_dir, train_label, output_dir, pretrained_xception, logger)
+    xception_train_model_with_augmentation(img_size, train_dir, train_label, output_dir, pretrained_xception, logger)
 
 
     output_filename = os.path.join(output_dir, 'submission.csv')
