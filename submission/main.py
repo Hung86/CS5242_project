@@ -355,7 +355,7 @@ def xception_train_model(img_size, train_dir, train_label, output_dir, model, lo
                                                seed=123,
                                                target_size=img_size, batch_size=batch_size)
 
-        hist = model.fit(train_data, epochs=80, validation_data=val_data, verbose=1, callbacks=[tensorboard, model_checkpoint])
+        hist = model.fit(train_data, epochs=70, validation_data=val_data, verbose=1, callbacks=[tensorboard, model_checkpoint])
         history.append(hist)
         model.evaluate(val_data, verbose=2)
 
